@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledgerly — Invoice System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2A4A;
+  --ink-soft:#3A4A6B;
+  --paper:#FAF7F0;
+  --paper-dim:#F1ECE0;
+  --line:#E3DCC9;
+  --amber:#D97B29;
+  --amber-dark:#B6611A;
+  --green:#3F7D4F;
+  --green-bg:#E7F1E8;
+  --red:#B33A3A;
+  --red-bg:#F8E8E6;
+  --amber-bg:#FBEADA;
+  --white:#FFFFFF;
+  --shadow: 0 1px 2px rgba(27,42,74,.06), 0 4px 14px rgba(27,42,74,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{font-family:'Fraunces',serif;}
+.mono{font-family:'JetBrains Mono',monospace;}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::selection{background:var(--amber);color:#fff;}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 18px;border-radius:8px;border:1px solid transparent;
+  font-weight:600;font-size:14px;background:var(--ink);color:#fff;
+  transition:transform .08s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow);}
+.btn:active{transform:translateY(0);}
+.btn-amber{background:var(--amber);}
+.btn-amber:hover{background:var(--amber-dark);}
+.btn-outline{background:transparent;color:var(--ink);border:1px solid var(--line);}
+.btn-outline:hover{background:var(--paper-dim);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red);}
+.btn-danger:hover{background:var(--red-bg);}
+.btn-green{background:var(--green);}
+.btn-sm{padding:6px 12px;font-size:13px;border-radius:6px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.02em;text-transform:uppercase;}
+.field input[type=text],.field input[type=email],.field input[type=password],
+.field input[type=number],.field input[type=date],.field input[type=tel],
+.field select,.field textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+  background:#fff;font-size:14px;color:var(--ink);outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-bg);}
+.field-row{display:flex;gap:12px;}
+.field-row>.field{flex:1;}
+.hint{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.pad{padding:24px;}
+
+/* ===== LOGIN PAGE ===== */
+#page-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:
+  radial-gradient(circle at 15% 10%, #fff 0%, var(--paper) 45%),
+  var(--paper);}
+.login-wrap{width:100%;max-width:960px;display:grid;grid-template-columns:1fr 1.15fr;gap:0;border-radius:18px;overflow:hidden;box-shadow:0 8px 40px rgba(27,42,74,.12);}
+.login-brand{background:var(--ink);color:#fff;padding:48px 38px;display:flex;flex-direction:column;justify-content:space-between;}
+.login-brand .stamp{
+  width:64px;height:64px;border:2px solid var(--amber);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';
+  font-weight:700;color:var(--amber);transform:rotate(-8deg);font-size:11px;text-align:center;line-height:1.2;
+}
+.login-brand h1{font-size:34px;margin:22px 0 10px;font-weight:600;}
+.login-brand p{color:#C7CFE0;font-size:14.5px;line-height:1.6;margin:0;}
+.login-brand .foot{font-size:12px;color:#8E9AB8;border-top:1px solid #2C3C5E;padding-top:16px;}
+.login-form-side{background:#fff;padding:40px 38px;}
+.tabs{display:flex;gap:6px;background:var(--paper-dim);padding:4px;border-radius:10px;margin-bottom:24px;}
+.tab-btn{flex:1;padding:9px 8px;border:none;background:transparent;border-radius:7px;font-weight:600;font-size:13.5px;color:var(--ink-soft);}
+.tab-btn.active{background:#fff;color:var(--ink);box-shadow:var(--shadow);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.logo-upload{display:flex;align-items:center;gap:14px;}
+.logo-preview{width:56px;height:56px;border-radius:10px;border:1px dashed var(--line);object-fit:cover;background:var(--paper-dim);}
+.msg{font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none;}
+.msg.error{background:var(--red-bg);color:var(--red);display:block;}
+.msg.success{background:var(--green-bg);color:var(--green);display:block;}
+
+/* ===== APP SHELL ===== */
+.app-shell{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--ink);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+.sidebar-brand{padding:22px 22px 16px;border-bottom:1px solid #2C3C5E;display:flex;align-items:center;gap:10px;}
+.sidebar-brand img{width:32px;height:32px;border-radius:7px;object-fit:cover;background:#fff;}
+.sidebar-brand .ph-logo{width:32px;height:32px;border-radius:7px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;}
+.sidebar-brand b{font-size:14.5px;font-weight:600;}
+.nav{flex:1;padding:14px 12px;}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:none;color:#C7CFE0;padding:11px 12px;border-radius:8px;font-size:14px;font-weight:500;margin-bottom:2px;}
+.nav button:hover{background:#24355A;color:#fff;}
+.nav button.active{background:var(--amber);color:#fff;}
+.sidebar-foot{padding:16px;border-top:1px solid #2C3C5E;}
+.main{flex:1;min-width:0;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--line);background:#fff;}
+.content{padding:28px 32px;max-width:1180px;}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber-dark);font-weight:700;margin-bottom:4px;}
+.page-title{font-size:26px;margin:0 0 22px;font-weight:600;}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:28px;}
+.stat-card{padding:18px 20px;}
+.stat-card .v{font-family:'JetBrains Mono';font-size:24px;font-weight:700;}
+.stat-card .l{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;padding:10px 14px;background:var(--paper-dim);color:var(--ink-soft);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;}
+th:first-child{border-radius:8px 0 0 8px;}
+th:last-child{border-radius:0 8px 8px 0;}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.empty-state{text-align:center;padding:50px 20px;color:var(--ink-soft);}
+.empty-state .e-icon{font-size:34px;margin-bottom:10px;}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.02em;}
+.badge.paid{background:var(--green-bg);color:var(--green);}
+.badge.unpaid{background:var(--red-bg);color:var(--red);}
+.badge.partial{background:var(--amber-bg);color:var(--amber-dark);}
+
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px;flex-wrap:wrap;}
+.search-box{position:relative;}
+.search-box input{padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;min-width:220px;}
+.search-box::before{content:"⌕";position:absolute;left:11px;top:8px;color:var(--ink-soft);font-size:16px;}
+
+.modal-bg{position:fixed;inset:0;background:rgba(27,42,74,.45);display:none;align-items:flex-start;justify-content:center;z-index:200;overflow-y:auto;padding:40px 16px;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:760px;box-shadow:0 12px 50px rgba(0,0,0,.25);}
+.modal.modal-sm{max-width:440px;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 26px;border-bottom:1px solid var(--line);}
+.modal-head h3{margin:0;font-size:19px;}
+.modal-close{background:transparent;border:none;font-size:20px;color:var(--ink-soft);line-height:1;}
+.modal-body{padding:24px 26px;max-height:74vh;overflow-y:auto;}
+.modal-foot{padding:18px 26px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
+
+.line-items th,.line-items td{padding:8px 10px;}
+.line-items input,.line-items select{padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:13px;width:100%;}
+.li-remove{background:transparent;border:none;color:var(--red);font-size:16px;}
+.totals-box{margin-top:10px;margin-left:auto;width:280px;}
+.totals-box .row{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px dashed var(--line);}
+.totals-box .row.grand{font-weight:700;font-size:17px;border-bottom:none;border-top:2px solid var(--ink);margin-top:4px;padding-top:10px;}
+.product-search-wrap{position:relative;}
+.product-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);max-height:180px;overflow-y:auto;z-index:30;margin-top:2px;}
+.product-dropdown div{padding:8px 12px;font-size:13px;cursor:pointer;}
+.product-dropdown div:hover{background:var(--paper-dim);}
+
+.section-divider{border:none;border-top:1px solid var(--line);margin:22px 0;}
+.cust-card{cursor:pointer;}
+.cust-card:hover{border-color:var(--amber);}
+.small-muted{color:var(--ink-soft);font-size:12.5px;}
+
+/* ===== PRINTABLE INVOICE ===== */
+.inv-paper{background:#fff;font-family:'Inter',sans-serif;color:#1B2A4A;padding:46px;max-width:780px;margin:0 auto;}
+.inv-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;}
+.inv-top img{max-height:56px;max-width:160px;object-fit:contain;}
+.inv-store-name{font-family:'Fraunces',serif;font-size:22px;font-weight:600;}
+.inv-meta{text-align:right;}
+.inv-meta .num{font-family:'JetBrains Mono';font-size:20px;font-weight:700;color:#D97B29;}
+.inv-addr-row{display:flex;gap:40px;margin-bottom:24px;}
+.inv-addr-block h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6B7794;margin:0 0 6px;}
+.inv-addr-block p{margin:0;font-size:13.5px;line-height:1.6;white-space:pre-line;}
+.inv-table{width:100%;border-collapse:collapse;margin-bottom:18px;}
+.inv-table th{background:#F1ECE0;font-size:11px;text-transform:uppercase;padding:9px 10px;text-align:left;}
+.inv-table td{padding:9px 10px;border-bottom:1px solid #E3DCC9;font-size:13.5px;}
+.inv-totals{margin-left:auto;width:260px;}
+.inv-totals .r{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px;}
+.inv-totals .r.grand{font-weight:700;font-size:16px;border-top:2px solid #1B2A4A;padding-top:10px;margin-top:4px;}
+.inv-extra{margin-top:28px;font-size:13px;color:#3A4A6B;white-space:pre-line;border-top:1px solid #E3DCC9;padding-top:16px;}
+
+.hidden{display:none !important;}
+@media(max-width:780px){
+  .login-wrap{grid-template-columns:1fr;}
+  .login-brand{display:none;}
+  .app-shell{flex-direction:column;}
+  .sidebar{width:100%;}
+  .content{padding:20px 16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ GLOBAL LOADING OVERLAY ============ -->
+<div id="globalLoading" style="position:fixed;inset:0;background:rgba(250,247,240,.92);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;">
+  <div style="width:34px;height:34px;border:3px solid #E3DCC9;border-top-color:#D97B29;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <div class="small-muted">Connecting to Firebase…</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- ============ LOGIN PAGE ============ -->
+<div id="page-login" class="hidden">
+  <div class="login-wrap card">
+    <div class="login-brand">
+      <div>
+        <div class="stamp">PAID<br>IN<br>FULL</div>
+        <h1>Ledgerly</h1>
+        <p>One ledger for every store. Track products, build branded invoices, and watch payments come in — all from a single login.</p>
+      </div>
+      <div class="foot">Multi-store invoicing, kept simple. · Synced with Firebase</div>
+    </div>
+    <div class="login-form-side">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="storelogin">Store Login</button>
+        <button class="tab-btn" data-tab="signup">Store Signup</button>
+        <button class="tab-btn" data-tab="adminlogin">Admin</button>
+      </div>
+
+      <div id="loginMsg" class="msg"></div>
+
+      <!-- Store Login -->
+      <div class="tab-panel active" id="tab-storelogin">
+        <div class="field"><label>Email</label><input type="email" id="storeLoginEmail" placeholder="store@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" id="storeLoginPass" placeholder="••••••••"></div>
+        <button class="btn btn-amber" style="width:100%" onclick="handleStoreLogin()">Log In to Store</button>
+      </div>
+
+      <!-- Store Signup -->
+      <div class="tab-panel" id="tab-signup">
+        <div class="field"><label>Store Name</label><input type="text" id="suName" placeholder="Acme Traders"></div>
+        <div class="field">
+          <label>Logo</label>
+          <div class="logo-upload">
+            <img id="suLogoPreview" class="logo-preview" src="" style="display:none">
+            <input type="file" id="suLogoFile" accept="image/*" onchange="previewLogo(event,'suLogoPreview')">
+          </div>
+        </div>
+        <div class="field"><label>Email (for login)</label><input type="email" id="suEmail" placeholder="store@example.com"></div>
+        <div class="field"><label>Password (for login)</label><input type="password" id="suPass" placeholder="At least 6 characters"></div>
+        <button class="btn btn-amber" style="width:100%" onclick="handleStoreSignup()">Create Store Account</button>
+      </div>
+
+      <!-- Admin Login -->
+      <div class="tab-panel" id="tab-adminlogin">
+        <div id="adminBootstrapBox" class="hidden">
+          <p class="hint" style="margin-bottom:14px;">No admin account exists yet on this Firebase project. Set one up below (one-time only):</p>
+          <div class="field"><label>Admin Email</label><input type="email" id="adminBootEmail" value="asharullahkhan.nakson@gmail.com"></div>
+          <div class="field"><label>Admin Password</label><input type="password" id="adminBootPass" value="Asharkhanbest9@"></div>
+          <button class="btn btn-amber" style="width:100%" onclick="createAdminAccount()">Create Admin Account</button>
+        </div>
+        <div id="adminLoginBox">
+          <div class="field"><label>Admin Email</label><input type="email" id="adminLoginEmail" value="asharullahkhan.nakson@gmail.com"></div>
+          <div class="field"><label>Admin Password</label><input type="password" id="adminLoginPass" placeholder="••••••••"></div>
+          <button class="btn" style="width:100%" onclick="handleAdminLogin()">Log In to Admin Panel</button>
+          <p class="hint" style="margin-top:12px;">First time on this project? <a href="#" onclick="document.getElementById('adminBootstrapBox').classList.remove('hidden');document.getElementById('adminLoginBox').classList.add('hidden');return false;">Set up admin account</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADMIN PANEL ============ -->
+<div id="page-admin" class="app-shell hidden">
+  <div class="sidebar">
+    <div class="sidebar-brand"><div class="ph-logo">A</div><b>Admin Panel</b></div>
+    <div class="nav">
+      <button class="nav-btn active" data-view="overview" onclick="adminGo('overview')">📊 Overview</button>
+      <button class="nav-btn" data-view="stores" onclick="adminGo('stores')">🏬 Stores</button>
+      <button class="nav-btn" data-view="settings" onclick="adminGo('settings')">⚙️ Admin Settings</button>
+    </div>
+    <div class="sidebar-foot">
+      <button class="btn btn-outline" style="width:100%;background:transparent;color:#fff;border-color:#3A4A6B" onclick="logout()">Log Out</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar"><div><div class="eyebrow">Ledgerly</div><b>System Administrator</b></div></div>
+    <div class="content" id="adminContent"></div>
+  </div>
+</div>
+
+<!-- ============ STORE APP ============ -->
+<div id="page-store" class="app-shell hidden">
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <img id="sbLogo" class="hidden">
+      <div id="sbPhLogo" class="ph-logo">S</div>
+      <b id="sbStoreName">Store</b>
+    </div>
+    <div class="nav">
+      <button class="nav-btn" data-view="dashboard" onclick="storeGo('dashboard')">📊 Dashboard</button>
+      <button class="nav-btn" data-view="products" onclick="storeGo('products')">📦 Products</button>
+      <button class="nav-btn" data-view="invoices" onclick="storeGo('invoices')">🧾 My Invoices</button>
+      <button class="nav-btn" data-view="customers" onclick="storeGo('customers')">👥 My Customers</button>
+      <button class="nav-btn" data-view="settings" onclick="storeGo('settings')">⚙️ Store Settings</button>
+    </div>
+    <div class="sidebar-foot">
+      <button class="btn btn-outline" style="width:100%;background:transparent;color:#fff;border-color:#3A4A6B" onclick="logout()">Log Out</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="eyebrow" id="storeEyebrow">Store</div><b id="storeTopTitle">Dashboard</b></div>
+      <button class="btn btn-amber" onclick="openInvoiceEditor()">+ New Invoice</button>
+    </div>
+    <div class="content" id="storeContent"></div>
+  </div>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div class="modal-bg" id="invoiceModalBg"><div class="modal" id="invoiceModal"></div></div>
+<div class="modal-bg" id="payModalBg"><div class="modal modal-sm" id="payModal"></div></div>
+<div class="modal-bg" id="custModalBg"><div class="modal" id="custModal"></div></div>
+<div class="modal-bg" id="printModalBg"><div class="modal" id="printModal" style="max-width:840px;"></div></div>
+
+<!-- ============ FIREBASE ============ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBDwDR8BWAbWcRDKx3Ww3B_EF0CAEWSfuQ",
+  authDomain: "ledgerly-invoices.firebaseapp.com",
+  databaseURL: "https://ledgerly-invoices-default-rtdb.firebaseio.com",
+  projectId: "ledgerly-invoices",
+  storageBucket: "ledgerly-invoices.firebasestorage.app",
+  messagingSenderId: "773214079441",
+  appId: "1:773214079441:web:f376ce4a1f99acdbb738f0"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const fdb = firebase.firestore();
+
+/* ============================================================
+   STATE / HELPERS
+   ============================================================ */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,9); }
+function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function money(n){ n = Number(n)||0; return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function showLoading(on){ document.getElementById('globalLoading').style.display = on ? 'flex' : 'none'; }
+
+let DB = { stores: [], session: null };
+let UI = { storeView:'dashboard', adminView:'overview', editingInvoiceId:null, invoiceItems:[], customFields:[], adminViewingStoreId:null, custDetailId:null, _selectedCustomerId:null };
+
+function currentStore(){
+  if(!DB.session || DB.session.type!=='store') return null;
+  return DB.stores.find(s=>s.id===DB.session.storeId) || null;
+}
+
+/* ============================================================
+   FIRESTORE DATA LAYER
+   ============================================================ */
+async function fetchStoreFull(uidStr){
+  const storeDoc = await fdb.collection('stores').doc(uidStr).get();
+  if(!storeDoc.exists) return null;
+  const [prodSnap, custSnap, invSnap] = await Promise.all([
+    fdb.collection('stores').doc(uidStr).collection('products').get(),
+    fdb.collection('stores').doc(uidStr).collection('customers').get(),
+    fdb.collection('stores').doc(uidStr).collection('invoices').get()
+  ]);
+  return {
+    id: uidStr, ...storeDoc.data(),
+    products: prodSnap.docs.map(d=>({id:d.id, ...d.data()})),
+    customers: custSnap.docs.map(d=>({id:d.id, ...d.data()})),
+    invoices: invSnap.docs.map(d=>({id:d.id, ...d.data()}))
+  };
+}
+async function fetchAllStoresFull(){
+  const storesSnap = await fdb.collection('stores').get();
+  return Promise.all(storesSnap.docs.map(d=>fetchStoreFull(d.id)));
+}
+function storeRef(storeId){ return fdb.collection('stores').doc(storeId); }
+
+async function clearAndRefillCollection(storeId, subcol, items){
+  const colRef = storeRef(storeId).collection(subcol);
+  const existing = await colRef.get();
+  const batch = fdb.batch();
+  existing.docs.forEach(d=>batch.delete(d.ref));
+  items.forEach(item=>{
+    const {id, ...rest} = item;
+    batch.set(colRef.doc(id || uid()), rest);
+  });
+  await batch.commit();
+}
+
+/* ============================================================
+   AUTH STATE / ROUTER
+   ============================================================ */
+auth.onAuthStateChanged(async (user)=>{
+  showLoading(true);
+  document.getElementById('page-login').classList.add('hidden');
+  document.getElementById('page-admin').classList.add('hidden');
+  document.getElementById('page-store').classList.add('hidden');
+
+  if(!user){
+    DB.session = null;
+    showLoading(false);
+    document.getElementById('page-login').classList.remove('hidden');
+    return;
+  }
+
+  try{
+    const adminDoc = await fdb.collection('system').doc('admin').get();
+    if(adminDoc.exists && adminDoc.data().uid === user.uid){
+      DB.session = {type:'admin'};
+      DB.stores = await fetchAllStoresFull();
+      showLoading(false);
+      document.getElementById('page-admin').classList.remove('hidden');
+      adminGo(UI.adminView || 'overview');
+      return;
+    }
+    const store = await fetchStoreFull(user.uid);
+    if(store){
+      DB.session = {type:'store', storeId:user.uid};
+      DB.stores = [store];
+      showLoading(false);
+      document.getElementById('page-store').classList.remove('hidden');
+      renderStoreSidebarBrand(store);
+      storeGo(UI.storeView || 'dashboard');
+      return;
+    }
+    // signed in but no matching store/admin doc found
+    showLoading(false);
+    await auth.signOut();
+    showLoginMsg('This login is not linked to any store. Please contact the admin.');
+  }catch(err){
+    showLoading(false);
+    showLoginMsg('Connection error: '+err.message);
+  }
+});
+
+function logout(){
+  UI = { storeView:'dashboard', adminView:'overview', editingInvoiceId:null, invoiceItems:[], customFields:[], adminViewingStoreId:null, custDetailId:null, _selectedCustomerId:null };
+  auth.signOut();
+}
+
+/* ============================================================
+   LOGIN PAGE LOGIC
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    showLoginMsg('');
+  });
+});
+
+function showLoginMsg(text, type){
+  const el = document.getElementById('loginMsg');
+  if(!text){ el.style.display='none'; el.className='msg'; return; }
+  el.textContent = text;
+  el.className = 'msg ' + (type||'error');
+}
+
+function previewLogo(ev, targetId){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById(targetId);
+    img.src = e.target.result;
+    img.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function friendlyAuthError(err){
+  const map = {
+    'auth/invalid-email':'That email address looks invalid.',
+    'auth/user-not-found':'No account found with that email.',
+    'auth/wrong-password':'Incorrect password.',
+    'auth/invalid-credential':'Invalid email or password.',
+    'auth/email-already-in-use':'An account with this email already exists.',
+    'auth/weak-password':'Password should be at least 6 characters.',
+    'auth/too-many-requests':'Too many attempts. Please wait a moment and try again.'
+  };
+  return map[err.code] || err.message;
+}
+
+async function handleAdminLogin(){
+  const email = document.getElementById('adminLoginEmail').value.trim();
+  const pass = document.getElementById('adminLoginPass').value;
+  showLoginMsg('');
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);
+  }catch(err){ showLoginMsg(friendlyAuthError(err)); }
+}
+
+async function createAdminAccount(){
+  const email = document.getElementById('adminBootEmail').value.trim();
+  const pass = document.getElementById('adminBootPass').value;
+  if(!email || pass.length<6){ showLoginMsg('Enter a valid email and a password of at least 6 characters.'); return; }
+  showLoginMsg('');
+  try{
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await fdb.collection('system').doc('admin').set({uid: cred.user.uid, email});
+    // onAuthStateChanged takes over from here
+  }catch(err){
+    if(err.code==='auth/email-already-in-use'){
+      showLoginMsg('An admin account already exists — please log in instead.');
+      document.getElementById('adminBootstrapBox').classList.add('hidden');
+      document.getElementById('adminLoginBox').classList.remove('hidden');
+    } else {
+      showLoginMsg(friendlyAuthError(err));
+    }
+  }
+}
+
+async function handleStoreLogin(){
+  const email = document.getElementById('storeLoginEmail').value.trim();
+  const pass = document.getElementById('storeLoginPass').value;
+  showLoginMsg('');
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);
+  }catch(err){ showLoginMsg(friendlyAuthError(err)); }
+}
+
+async function handleStoreSignup(){
+  const name = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const pass = document.getElementById('suPass').value;
+  const logoImg = document.getElementById('suLogoPreview');
+  const logo = (logoImg.style.display!=='none' && logoImg.src.startsWith('data:')) ? logoImg.src : '';
+  if(!name || !email || !pass){ showLoginMsg('Please fill in store name, email and password.'); return; }
+  showLoginMsg('');
+  try{
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await storeRef(cred.user.uid).set({
+      name, email, logo,
+      invoicePrefix: 'INV-', nextInvoiceNumber: 1,
+      createdAt: Date.now()
+    });
+    // onAuthStateChanged takes over and logs them straight in
+  }catch(err){ showLoginMsg(friendlyAuthError(err)); }
+}
+
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
+function adminGo(view){
+  UI.adminView = view;
+  document.querySelectorAll('#page-admin .nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  const el = document.getElementById('adminContent');
+  if(view==='overview') el.innerHTML = renderAdminOverview();
+  else if(view==='stores') el.innerHTML = UI.adminViewingStoreId ? renderAdminStoreDetail(UI.adminViewingStoreId) : renderAdminStoresList();
+  else if(view==='settings') el.innerHTML = renderAdminSettings();
+}
+
+function storeTotalSales(st){ return st.invoices.reduce((sum,inv)=>sum+Number(inv.total||0),0); }
+function storeTotalPaid(st){ return st.invoices.reduce((sum,inv)=>sum+Number(inv.paidAmount||0),0); }
+
+function renderAdminOverview(){
+  const totalStores = DB.stores.length;
+  const totalInvoices = DB.stores.reduce((s,st)=>s+st.invoices.length,0);
+  const totalSales = DB.stores.reduce((s,st)=>s+storeTotalSales(st),0);
+  const totalPaid = DB.stores.reduce((s,st)=>s+storeTotalPaid(st),0);
+  return `
+    <div class="page-title">Overview</div>
+    <div class="stat-grid">
+      <div class="card stat-card"><div class="v">${totalStores}</div><div class="l">Registered Stores</div></div>
+      <div class="card stat-card"><div class="v">${totalInvoices}</div><div class="l">Total Invoices</div></div>
+      <div class="card stat-card"><div class="v">${money(totalSales)}</div><div class="l">Total Invoiced Value</div></div>
+      <div class="card stat-card"><div class="v">${money(totalPaid)}</div><div class="l">Total Collected</div></div>
+    </div>
+    <div class="card pad">
+      <h3 style="margin-top:0">Stores at a Glance</h3>
+      ${DB.stores.length===0 ? `<div class="empty-state"><div class="e-icon">🏬</div>No stores have signed up yet.</div>` : `
+      <table><thead><tr><th>Store</th><th>Email</th><th>Products</th><th>Invoices</th><th>Total Sales</th></tr></thead><tbody>
+      ${DB.stores.map(st=>`<tr><td><b>${escapeHtml(st.name)}</b></td><td>${escapeHtml(st.email)}</td><td>${st.products.length}</td><td>${st.invoices.length}</td><td class="mono">${money(storeTotalSales(st))}</td></tr>`).join('')}
+      </tbody></table>`}
+    </div>
+  `;
+}
+
+function renderAdminStoresList(){
+  return `
+    <div class="page-title">Registered Stores</div>
+    <div class="card pad">
+      ${DB.stores.length===0 ? `<div class="empty-state"><div class="e-icon">🏬</div>No stores yet. They'll show up here after signing up.</div>` :
+      DB.stores.map(st=>`
+        <div class="card pad" style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            ${st.logo?`<img src="${st.logo}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--line)">`:`<div class="ph-logo" style="background:var(--ink)">${escapeHtml(st.name[0]||'S')}</div>`}
+            <div>
+              <b style="font-size:15.5px">${escapeHtml(st.name)}</b><br>
+              <span class="small-muted">${escapeHtml(st.email)} · ${st.products.length} products · ${st.invoices.length} invoices · <span class="mono">${money(storeTotalSales(st))}</span> total sales</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="UI.adminViewingStoreId='${st.id}';adminGo('stores')">View Full Access</button>
+            <button class="btn btn-danger btn-sm" onclick="adminDeleteStore('${st.id}')">Delete</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function adminDeleteStore(id){
+  const st = DB.stores.find(s=>s.id===id);
+  if(!confirm(`Delete store "${st.name}" and all its Firestore data (products, customers, invoices)? Their login account will need to be removed separately from the Firebase Console → Authentication tab. Continue?`)) return;
+  showLoading(true);
+  try{
+    await clearAndRefillCollection(id, 'products', []);
+    await clearAndRefillCollection(id, 'customers', []);
+    await clearAndRefillCollection(id, 'invoices', []);
+    await storeRef(id).delete();
+    DB.stores = DB.stores.filter(s=>s.id!==id);
+  }catch(err){ alert('Error deleting store: '+err.message); }
+  showLoading(false);
+  UI.adminViewingStoreId=null;
+  adminGo('stores');
+}
+
+function renderAdminStoreDetail(id){
+  const st = DB.stores.find(s=>s.id===id);
+  if(!st) return `<div class="empty-state">Store not found.</div>`;
+  return `
+    <button class="btn btn-outline btn-sm" style="margin-bottom:16px;" onclick="UI.adminViewingStoreId=null;adminGo('stores')">← Back to Stores</button>
+    <div class="page-title">${escapeHtml(st.name)}</div>
+    <div class="stat-grid">
+      <div class="card stat-card"><div class="v">${st.products.length}</div><div class="l">Products</div></div>
+      <div class="card stat-card"><div class="v">${st.invoices.length}</div><div class="l">Invoices</div></div>
+      <div class="card stat-card"><div class="v">${st.customers.length}</div><div class="l">Customers</div></div>
+      <div class="card stat-card"><div class="v">${money(storeTotalSales(st))}</div><div class="l">Total Sales</div></div>
+    </div>
+    <div class="card pad" style="margin-bottom:20px;">
+      <h3 style="margin-top:0">Login Account</h3>
+      <div class="field"><label>Email</label><input type="text" value="${escapeHtml(st.email)}" readonly></div>
+      <p class="hint">Passwords are securely managed by Firebase Authentication and aren't visible to anyone, including admins.</p>
+      <button class="btn btn-outline btn-sm" onclick="adminSendReset('${escapeHtml(st.email)}')">Send Password Reset Email</button>
+    </div>
+    <div class="card pad" style="margin-bottom:20px;">
+      <h3 style="margin-top:0">Products</h3>
+      ${st.products.length===0 ? `<div class="small-muted">No products added.</div>` : `
+      <table><thead><tr><th>Name</th><th>Price</th></tr></thead><tbody>
+      ${st.products.map(p=>`<tr><td>${escapeHtml(p.name)}</td><td class="mono">${money(p.price)}</td></tr>`).join('')}
+      </tbody></table>`}
+    </div>
+    <div class="card pad">
+      <h3 style="margin-top:0">Invoices &amp; Sales</h3>
+      ${st.invoices.length===0 ? `<div class="small-muted">No invoices yet.</div>` : `
+      <table><thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead><tbody>
+      ${st.invoices.map(inv=>`<tr><td class="mono">${escapeHtml(inv.number)}</td><td>${escapeHtml(inv.customerSnapshot?.name||'—')}</td><td>${inv.date}</td><td class="mono">${money(inv.total)}</td><td class="mono">${money(inv.paidAmount)}</td><td>${invoiceStatusBadge(inv)}</td></tr>`).join('')}
+      </tbody></table>`}
+    </div>
+  `;
+}
+async function adminSendReset(email){
+  try{ await auth.sendPasswordResetEmail(email); alert('Password reset email sent to '+email); }
+  catch(err){ alert('Could not send reset email: '+err.message); }
+}
+
+function renderAdminSettings(){
+  return `
+    <div class="page-title">Admin Settings</div>
+    <div class="card pad" style="max-width:480px;margin-bottom:20px;">
+      <h3 style="margin-top:0">Change Admin Credentials</h3>
+      <div class="field"><label>Email</label><input type="email" id="admSetEmail" value="${escapeHtml(auth.currentUser?.email||'')}"></div>
+      <div class="field"><label>New Password</label><input type="password" id="admSetPass" placeholder="Leave blank to keep current password"></div>
+      <button class="btn btn-amber" onclick="adminSaveSettings()">Save Changes</button>
+      <p class="hint">If this fails with a "requires recent login" error, log out and back in, then try again.</p>
+      <div id="admSetMsg" class="msg" style="margin-top:12px;"></div>
+    </div>
+    <div class="card pad" style="max-width:480px;">
+      <h3 style="margin-top:0">Full System Backup</h3>
+      <p class="small-muted">Download a backup of every store's products, invoices and customers, or restore data for stores that already exist (login accounts must already exist — restoring data does not recreate logins).</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="downloadBackup({stores:DB.stores},'ledgerly-full-backup')">⬇ Download Backup</button>
+        <button class="btn btn-outline" onclick="document.getElementById('admRestoreFile').click()">⬆ Upload Backup</button>
+        <input type="file" id="admRestoreFile" accept="application/json" class="hidden" onchange="restoreFullBackup(event)">
+      </div>
+    </div>
+  `;
+}
+
+async function adminSaveSettings(){
+  const email = document.getElementById('admSetEmail').value.trim();
+  const pass = document.getElementById('admSetPass').value;
+  const m = document.getElementById('admSetMsg');
+  try{
+    if(email && email !== auth.currentUser.email){
+      await auth.currentUser.updateEmail(email);
+      await fdb.collection('system').doc('admin').update({email});
+    }
+    if(pass) await auth.currentUser.updatePassword(pass);
+    m.textContent='Admin settings updated.'; m.className='msg success';
+  }catch(err){
+    m.textContent = err.code==='auth/requires-recent-login' ? 'Please log out and back in, then try again.' : err.message;
+    m.className='msg error';
+  }
+}
+
+function downloadBackup(obj, filename){
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '-' + todayISO() + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+async function restoreFullBackup(ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.stores) throw new Error('bad format');
+      if(!confirm('This will overwrite Firestore data for matching store IDs. Continue?')) return;
+      showLoading(true);
+      for(const st of data.stores){
+        const {id, products, customers, invoices, ...profile} = st;
+        await storeRef(id).set(profile, {merge:true});
+        await clearAndRefillCollection(id, 'products', products||[]);
+        await clearAndRefillCollection(id, 'customers', customers||[]);
+        await clearAndRefillCollection(id, 'invoices', invoices||[]);
+      }
+      DB.stores = await fetchAllStoresFull();
+      showLoading(false);
+      adminGo('stores');
+    }catch(err){ showLoading(false); alert('Restore failed: '+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================================================
+   STORE APP — SIDEBAR / NAV
+   ============================================================ */
+function renderStoreSidebarBrand(st){
+  document.getElementById('sbStoreName').textContent = st.name;
+  const img = document.getElementById('sbLogo'), ph = document.getElementById('sbPhLogo');
+  if(st.logo){ img.src = st.logo; img.classList.remove('hidden'); ph.classList.add('hidden'); }
+  else { img.classList.add('hidden'); ph.classList.remove('hidden'); ph.textContent = (st.name[0]||'S').toUpperCase(); }
+}
+
+const STORE_TITLES = {dashboard:'Dashboard', products:'Products', invoices:'My Invoices', customers:'My Customers', settings:'Store Settings'};
+
+function storeGo(view){
+  const st = currentStore(); if(!st) return;
+  UI.storeView = view; UI.custDetailId = null;
+  document.querySelectorAll('#page-store .nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.getElementById('storeEyebrow').textContent = st.name;
+  document.getElementById('storeTopTitle').textContent = STORE_TITLES[view];
+  const el = document.getElementById('storeContent');
+  if(view==='dashboard') el.innerHTML = renderStoreDashboard(st);
+  else if(view==='products') el.innerHTML = renderStoreProducts(st);
+  else if(view==='invoices') el.innerHTML = renderStoreInvoices(st);
+  else if(view==='customers') el.innerHTML = renderStoreCustomers(st);
+  else if(view==='settings') el.innerHTML = renderStoreSettings(st);
+}
+function refreshStoreView(){ storeGo(UI.storeView); }
+
+/* ---------- DASHBOARD ---------- */
+function renderStoreDashboard(st){
+  const totalSales = storeTotalSales(st), totalPaid = storeTotalPaid(st);
+  const outstanding = totalSales - totalPaid;
+  const recent = [...st.invoices].sort((a,b)=>b.createdAt-a.createdAt).slice(0,6);
+  return `
+    <div class="stat-grid">
+      <div class="card stat-card"><div class="v">${st.invoices.length}</div><div class="l">Total Invoices</div></div>
+      <div class="card stat-card"><div class="v">${st.customers.length}</div><div class="l">Customers</div></div>
+      <div class="card stat-card"><div class="v">${money(totalSales)}</div><div class="l">Total Invoiced</div></div>
+      <div class="card stat-card"><div class="v" style="color:${outstanding>0?'var(--red)':'var(--green)'}">${money(outstanding)}</div><div class="l">Outstanding Balance</div></div>
+    </div>
+    <div class="card pad">
+      <h3 style="margin-top:0">Recent Invoices</h3>
+      ${recent.length===0?`<div class="empty-state"><div class="e-icon">🧾</div>No invoices yet — create your first one.</div>`:`
+      <table><thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th></tr></thead><tbody>
+      ${recent.map(inv=>`<tr><td class="mono">${escapeHtml(inv.number)}</td><td>${escapeHtml(inv.customerSnapshot?.name||'—')}</td><td>${inv.date}</td><td class="mono">${money(inv.total)}</td><td>${invoiceStatusBadge(inv)}</td></tr>`).join('')}
+      </tbody></table>`}
+    </div>
+  `;
+}
+
+/* ---------- PRODUCTS ---------- */
+function renderStoreProducts(st){
+  return `
+    <div class="toolbar">
+      <div class="search-box"><input type="text" id="prodSearch" placeholder="Search products..." oninput="filterProducts()"></div>
+      <button class="btn btn-amber" onclick="openProductForm()">+ Add Product</button>
+    </div>
+    <div class="card pad">
+      <table id="prodTable"><thead><tr><th>Product</th><th>Price</th><th style="width:140px">Actions</th></tr></thead>
+      <tbody id="prodTbody">${productRows(st.products)}</tbody></table>
+      ${st.products.length===0?`<div class="empty-state"><div class="e-icon">📦</div>No products yet. Add your first product.</div>`:''}
+    </div>
+    <div id="productFormWrap"></div>
+  `;
+}
+function productRows(list){
+  return list.map(p=>`<tr><td>${escapeHtml(p.name)}</td><td class="mono">${money(p.price)}</td><td>
+    <button class="btn btn-outline btn-sm" onclick="openProductForm('${p.id}')">Edit</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Delete</button>
+  </td></tr>`).join('');
+}
+function filterProducts(){
+  const st = currentStore();
+  const q = document.getElementById('prodSearch').value.toLowerCase();
+  document.getElementById('prodTbody').innerHTML = productRows(st.products.filter(p=>p.name.toLowerCase().includes(q)));
+}
+function openProductForm(id){
+  const st = currentStore();
+  const p = id ? st.products.find(x=>x.id===id) : null;
+  document.getElementById('productFormWrap').innerHTML = `
+    <div class="modal-bg open"><div class="modal modal-sm">
+      <div class="modal-head"><h3>${p?'Edit Product':'Add Product'}</h3><button class="modal-close" onclick="closeProductForm()">✕</button></div>
+      <div class="modal-body">
+        <div class="field"><label>Product Name</label><input type="text" id="pfName" value="${p?escapeHtml(p.name):''}"></div>
+        <div class="field"><label>Price</label><input type="number" step="0.01" id="pfPrice" value="${p?p.price:''}"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" onclick="closeProductForm()">Cancel</button>
+        <button class="btn btn-amber" onclick="saveProduct('${id||''}')">Save Product</button>
+      </div>
+    </div></div>
+  `;
+}
+function closeProductForm(){ document.getElementById('productFormWrap').innerHTML=''; }
+async function saveProduct(id){
+  const st = currentStore();
+  const name = document.getElementById('pfName').value.trim();
+  const price = parseFloat(document.getElementById('pfPrice').value)||0;
+  if(!name){ alert('Enter a product name.'); return; }
+  try{
+    if(id){
+      await storeRef(st.id).collection('products').doc(id).update({name, price});
+      const p = st.products.find(x=>x.id===id); p.name=name; p.price=price;
+    } else {
+      const newId = uid();
+      await storeRef(st.id).collection('products').doc(newId).set({name, price});
+      st.products.push({id:newId, name, price});
+    }
+    closeProductForm(); refreshStoreView();
+  }catch(err){ alert('Error saving product: '+err.message); }
+}
+async function deleteProduct(id){
+  const st = currentStore();
+  if(!confirm('Delete this product?')) return;
+  try{
+    await storeRef(st.id).collection('products').doc(id).delete();
+    st.products = st.products.filter(p=>p.id!==id);
+    refreshStoreView();
+  }catch(err){ alert('Error deleting product: '+err.message); }
+}
+
+/* ---------- CUSTOMERS ---------- */
+function customerStats(st, custId){
+  const invs = st.invoices.filter(i=>i.customerId===custId);
+  const totalSale = invs.reduce((s,i)=>s+Number(i.total||0),0);
+  const totalPaid = invs.reduce((s,i)=>s+Number(i.paidAmount||0),0);
+  return {count:invs.length, totalSale, totalPaid, invs};
+}
+function renderStoreCustomers(st){
+  if(UI.custDetailId) return renderCustomerDetail(st, UI.custDetailId);
+  return `
+    <div class="toolbar">
+      <div class="search-box"><input type="text" id="custSearch" placeholder="Search customers..." oninput="filterCustomers()"></div>
+    </div>
+    <div id="custGrid" class="card pad">
+      ${st.customers.length===0?`<div class="empty-state"><div class="e-icon">👥</div>No customers yet. They're added automatically when you create an invoice.</div>`:custTableHtml(st.customers)}
+    </div>
+  `;
+}
+function custTableHtml(list){
+  const st = currentStore();
+  return `<table><thead><tr><th>Customer</th><th>Invoices</th><th>Total Sale</th><th>Total Paid</th></tr></thead><tbody>
+  ${list.map(c=>{ const s = customerStats(st,c.id);
+    return `<tr class="cust-card" onclick="UI.custDetailId='${c.id}';refreshStoreView()"><td><b>${escapeHtml(c.name)}</b><br><span class="small-muted">${escapeHtml(c.email||'')}</span></td><td>${s.count}</td><td class="mono">${money(s.totalSale)}</td><td class="mono">${money(s.totalPaid)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+function filterCustomers(){
+  const st = currentStore();
+  const q = document.getElementById('custSearch').value.toLowerCase();
+  document.getElementById('custGrid').innerHTML = custTableHtml(st.customers.filter(c=>c.name.toLowerCase().includes(q)));
+}
+function renderCustomerDetail(st, custId){
+  const c = st.customers.find(x=>x.id===custId);
+  if(!c){ UI.custDetailId=null; return renderStoreCustomers(st); }
+  const s = customerStats(st, custId);
+  return `
+    <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="UI.custDetailId=null;refreshStoreView()">← Back to Customers</button>
+    <div class="page-title">${escapeHtml(c.name)}</div>
+    <div class="stat-grid">
+      <div class="card stat-card"><div class="v">${s.count}</div><div class="l">Invoices</div></div>
+      <div class="card stat-card"><div class="v">${money(s.totalSale)}</div><div class="l">Total Sale</div></div>
+      <div class="card stat-card"><div class="v">${money(s.totalPaid)}</div><div class="l">Total Paid</div></div>
+      <div class="card stat-card"><div class="v" style="color:${s.totalSale-s.totalPaid>0?'var(--red)':'var(--green)'}">${money(s.totalSale-s.totalPaid)}</div><div class="l">Balance Due</div></div>
+    </div>
+    <div class="card pad" style="margin-bottom:20px;">
+      <h3 style="margin-top:0">Contact Details</h3>
+      <div class="field-row">
+        <div class="field"><label>Email</label><input type="text" readonly value="${escapeHtml(c.email||'—')}"></div>
+        <div class="field"><label>Phone</label><input type="text" readonly value="${escapeHtml(c.phone||'—')}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Shipping Address</label><textarea readonly rows="2">${escapeHtml(c.shippingAddress||'—')}</textarea></div>
+        <div class="field"><label>Billing Address</label><textarea readonly rows="2">${escapeHtml(c.billingAddress||'—')}</textarea></div>
+      </div>
+    </div>
+    <div class="card pad">
+      <h3 style="margin-top:0">Invoice History</h3>
+      ${s.invs.length===0?`<div class="small-muted">No invoices yet.</div>`:`
+      <table><thead><tr><th>#</th><th>Date</th><th>Total</th><th>Paid</th><th>Status</th><th></th></tr></thead><tbody>
+      ${s.invs.map(inv=>`<tr><td class="mono">${escapeHtml(inv.number)}</td><td>${inv.date}</td><td class="mono">${money(inv.total)}</td><td class="mono">${money(inv.paidAmount)}</td><td>${invoiceStatusBadge(inv)}</td><td><button class="btn btn-outline btn-sm" onclick="printInvoice('${inv.id}')">View</button></td></tr>`).join('')}
+      </tbody></table>`}
+    </div>
+  `;
+}
+
+/* ---------- INVOICES LIST ---------- */
+function invoiceStatusBadge(inv){
+  const paid = Number(inv.paidAmount||0), total = Number(inv.total||0);
+  if(paid<=0) return `<span class="badge unpaid">Unpaid</span>`;
+  if(paid>=total) return `<span class="badge paid">Paid</span>`;
+  return `<span class="badge partial">Partial</span>`;
+}
+function renderStoreInvoices(st){
+  const list = [...st.invoices].sort((a,b)=>b.createdAt-a.createdAt);
+  return `
+    <div class="toolbar">
+      <div class="search-box"><input type="text" id="invSearch" placeholder="Search by # or customer..." oninput="filterInvoices()"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="document.getElementById('invRestoreFile').click()">⬆ Upload Backup</button>
+        <input type="file" id="invRestoreFile" accept="application/json" class="hidden" onchange="restoreStoreBackup(event)">
+        <button class="btn btn-outline" onclick="downloadBackup(currentStore(),'store-backup')">⬇ Download Backup</button>
+        <button class="btn btn-amber" onclick="openInvoiceEditor()">+ New Invoice</button>
+      </div>
+    </div>
+    <div class="card pad">
+      <table id="invTable"><thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Due</th><th>Total</th><th>Status</th><th style="width:230px">Actions</th></tr></thead>
+      <tbody id="invTbody">${invoiceRows(list)}</tbody></table>
+      ${list.length===0?`<div class="empty-state"><div class="e-icon">🧾</div>No invoices yet — create your first one.</div>`:''}
+    </div>
+  `;
+}
+function invoiceRows(list){
+  return list.map(inv=>`<tr>
+    <td class="mono">${escapeHtml(inv.number)}</td>
+    <td>${escapeHtml(inv.customerSnapshot?.name||'—')}</td>
+    <td>${inv.date}</td><td>${inv.dueDate||'—'}</td>
+    <td class="mono">${money(inv.total)}</td>
+    <td>${invoiceStatusBadge(inv)}</td>
+    <td>
+      <button class="btn btn-green btn-sm" onclick="openPayModal('${inv.id}')">Pay</button>
+      <button class="btn btn-outline btn-sm" onclick="openInvoiceEditor('${inv.id}')">Edit</button>
+      <button class="btn btn-outline btn-sm" onclick="printInvoice('${inv.id}')">PDF</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteInvoice('${inv.id}')">Del</button>
+    </td>
+  </tr>`).join('');
+}
+function filterInvoices(){
+  const st = currentStore();
+  const q = document.getElementById('invSearch').value.toLowerCase();
+  const list = st.invoices.filter(i=> i.number.toLowerCase().includes(q) || (i.customerSnapshot?.name||'').toLowerCase().includes(q));
+  document.getElementById('invTbody').innerHTML = invoiceRows(list.sort((a,b)=>b.createdAt-a.createdAt));
+}
+async function deleteInvoice(id){
+  const st = currentStore();
+  if(!confirm('Delete this invoice? This cannot be undone.')) return;
+  try{
+    await storeRef(st.id).collection('invoices').doc(id).delete();
+    st.invoices = st.invoices.filter(i=>i.id!==id);
+    refreshStoreView();
+  }catch(err){ alert('Error deleting invoice: '+err.message); }
+}
+async function restoreStoreBackup(ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.products || !data.invoices || !data.customers) throw new Error('bad format');
+      if(!confirm("This will replace this store's products, customers and invoices with the backup. Continue?")) return;
+      showLoading(true);
+      const st = currentStore();
+      await clearAndRefillCollection(st.id, 'products', data.products);
+      await clearAndRefillCollection(st.id, 'customers', data.customers);
+      await clearAndRefillCollection(st.id, 'invoices', data.invoices);
+      const profileUpdate = {};
+      if(data.invoicePrefix) profileUpdate.invoicePrefix = data.invoicePrefix;
+      if(data.nextInvoiceNumber) profileUpdate.nextInvoiceNumber = data.nextInvoiceNumber;
+      if(Object.keys(profileUpdate).length) await storeRef(st.id).update(profileUpdate);
+      const fresh = await fetchStoreFull(st.id);
+      DB.stores = [fresh];
+      showLoading(false);
+      refreshStoreView();
+    }catch(err){ showLoading(false); alert('Invalid backup file: '+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- STORE SETTINGS ---------- */
+function renderStoreSettings(st){
+  return `
+    <div class="card pad" style="max-width:560px;margin-bottom:20px;">
+      <h3 style="margin-top:0">Store Profile</h3>
+      <div class="field"><label>Store Name</label><input type="text" id="setName" value="${escapeHtml(st.name)}"></div>
+      <div class="field">
+        <label>Logo</label>
+        <div class="logo-upload">
+          <img id="setLogoPreview" class="logo-preview" src="${st.logo||''}" style="${st.logo?'':'display:none'}">
+          <input type="file" id="setLogoFile" accept="image/*" onchange="previewLogo(event,'setLogoPreview')">
+        </div>
+      </div>
+      <div class="field"><label>Login Email</label><input type="email" id="setEmail" value="${escapeHtml(st.email)}"></div>
+      <div class="field"><label>New Password</label><input type="password" id="setPass" placeholder="Leave blank to keep current password"></div>
+      <button class="btn btn-amber" onclick="saveStoreSettings()">Save Settings</button>
+      <p class="hint">If saving fails with a "requires recent login" error, log out and back in, then try again.</p>
+      <div id="setMsg" class="msg" style="margin-top:12px;"></div>
+    </div>
+    <div class="card pad" style="max-width:560px;margin-bottom:20px;">
+      <h3 style="margin-top:0">Invoice Numbering</h3>
+      <div class="field-row">
+        <div class="field"><label>Prefix</label><input type="text" id="setPrefix" value="${escapeHtml(st.invoicePrefix)}"></div>
+        <div class="field"><label>Next Invoice Number</label><input type="number" id="setNextNum" value="${st.nextInvoiceNumber}"></div>
+      </div>
+      <p class="hint">Next invoice will be numbered: <span class="mono" id="nextPreview">${escapeHtml(st.invoicePrefix)}${String(st.nextInvoiceNumber).padStart(4,'0')}</span></p>
+      <button class="btn btn-outline" onclick="saveInvoiceNumbering()">Save Numbering</button>
+    </div>
+    <div class="card pad" style="max-width:560px;">
+      <h3 style="margin-top:0">Backup This Store</h3>
+      <p class="small-muted">Download your products, customers and invoices, or restore from a previous backup.</p>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="downloadBackup(currentStore(),'store-backup')">⬇ Download Backup</button>
+        <button class="btn btn-outline" onclick="document.getElementById('setRestoreFile').click()">⬆ Upload Backup</button>
+        <input type="file" id="setRestoreFile" accept="application/json" class="hidden" onchange="restoreStoreBackup(event)">
+      </div>
+    </div>
+  `;
+}
+async function saveStoreSettings(){
+  const st = currentStore();
+  const name = document.getElementById('setName').value.trim();
+  const email = document.getElementById('setEmail').value.trim();
+  const pass = document.getElementById('setPass').value;
+  const logoImg = document.getElementById('setLogoPreview');
+  const m = document.getElementById('setMsg');
+  if(!name || !email){ return; }
+  try{
+    const profileUpdate = {name};
+    if(logoImg.src && logoImg.src.startsWith('data:')) profileUpdate.logo = logoImg.src;
+    if(email !== st.email){
+      await auth.currentUser.updateEmail(email);
+      profileUpdate.email = email;
+    }
+    if(pass) await auth.currentUser.updatePassword(pass);
+    await storeRef(st.id).update(profileUpdate);
+    Object.assign(st, profileUpdate);
+    renderStoreSidebarBrand(st);
+    m.textContent='Settings saved.'; m.className='msg success';
+  }catch(err){
+    m.textContent = err.code==='auth/requires-recent-login' ? 'Please log out and back in, then try again.' : err.message;
+    m.className='msg error';
+  }
+}
+async function saveInvoiceNumbering(){
+  const st = currentStore();
+  const invoicePrefix = document.getElementById('setPrefix').value;
+  const nextInvoiceNumber = parseInt(document.getElementById('setNextNum').value)||1;
+  try{
+    await storeRef(st.id).update({invoicePrefix, nextInvoiceNumber});
+    st.invoicePrefix = invoicePrefix; st.nextInvoiceNumber = nextInvoiceNumber;
+    refreshStoreView();
+  }catch(err){ alert('Error saving numbering: '+err.message); }
+}
+
+/* ============================================================
+   INVOICE EDITOR
+   ============================================================ */
+function blankInvoice(){
+  return { id:null, number:null, customerId:null,
+    customerSnapshot:{name:'',shippingAddress:'',billingAddress:'',phone:'',email:''},
+    date: todayISO(), dueDate:'',
+    shippingType:'manual', shippingAmount:0,
+    discount:0, extraText:'', paidAmount:0 };
+}
+function openInvoiceEditor(invId){
+  const st = currentStore();
+  let inv;
+  if(invId){
+    UI.editingInvoiceId = invId;
+    inv = st.invoices.find(i=>i.id===invId);
+    UI.invoiceItems = JSON.parse(JSON.stringify(inv.items));
+    UI.customFields = JSON.parse(JSON.stringify(inv.customFields||[]));
+  } else {
+    UI.editingInvoiceId = null;
+    inv = blankInvoice();
+    UI.invoiceItems = [];
+    UI.customFields = [];
+  }
+  UI._editInv = inv;
+  UI._selectedCustomerId = invId ? inv.customerId : null;
+  document.getElementById('invoiceModal').innerHTML = invoiceEditorHtml(st, inv);
+  document.getElementById('invoiceModalBg').classList.add('open');
+}
+function closeInvoiceEditor(){ document.getElementById('invoiceModalBg').classList.remove('open'); }
+
+function invoiceEditorHtml(st, inv){
+  const previewNum = inv.number || (st.invoicePrefix + String(st.nextInvoiceNumber).padStart(4,'0'));
+  return `
+    <div class="modal-head"><h3>${UI.editingInvoiceId?'Edit Invoice':'New Invoice'} <span class="mono" style="color:var(--amber-dark);font-size:14px;">${escapeHtml(previewNum)}</span></h3><button class="modal-close" onclick="closeInvoiceEditor()">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Customer</label>
+        <div class="product-search-wrap">
+          <input type="text" id="custSearchInput" placeholder="Search existing customer or type a new name..." value="${escapeHtml(inv.customerSnapshot.name)}" oninput="custSearchType()" autocomplete="off">
+          <div id="custDropdown" class="product-dropdown hidden"></div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Shipping Address</label><textarea id="custShipAddr" rows="2">${escapeHtml(inv.customerSnapshot.shippingAddress)}</textarea></div>
+        <div class="field"><label>Billing Address (Optional)</label><textarea id="custBillAddr" rows="2">${escapeHtml(inv.customerSnapshot.billingAddress)}</textarea></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Customer Email</label><input type="email" id="custEmail" value="${escapeHtml(inv.customerSnapshot.email||'')}"></div>
+        <div class="field"><label>Customer Phone</label><input type="text" id="custPhone" value="${escapeHtml(inv.customerSnapshot.phone||'')}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Invoice Date</label><input type="date" id="invDate" value="${inv.date}"></div>
+        <div class="field"><label>Due Date</label><input type="date" id="invDueDate" value="${inv.dueDate}"></div>
+      </div>
+
+      <hr class="section-divider">
+      <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;">Line Items</label>
+      <table class="line-items" style="margin-top:8px;">
+        <thead><tr><th style="width:30%">Product</th><th>Qty</th><th>Rate</th><th>Amount</th><th></th></tr></thead>
+        <tbody id="lineItemsBody">${lineItemRows(st)}</tbody>
+      </table>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="btn btn-outline btn-sm" onclick="addLineItem(false)">+ Add Product</button>
+        <button class="btn btn-outline btn-sm" onclick="addLineItem(true)">+ Add Custom Item</button>
+      </div>
+
+      <hr class="section-divider">
+      <div class="field-row">
+        <div class="field">
+          <label>Shipping</label>
+          <select id="shipType" onchange="toggleShipInput()">
+            <option value="manual" ${inv.shippingType==='manual'?'selected':''}>Manual Amount</option>
+            <option value="free" ${inv.shippingType==='free'?'selected':''}>Free</option>
+          </select>
+        </div>
+        <div class="field"><label>Shipping Amount</label><input type="number" step="0.01" id="shipAmount" value="${inv.shippingAmount}" ${inv.shippingType==='free'?'disabled':''} oninput="recalcTotals()"></div>
+        <div class="field"><label>Discount (Optional)</label><input type="number" step="0.01" id="discount" value="${inv.discount||0}" oninput="recalcTotals()"></div>
+      </div>
+
+      <div id="customFieldsWrap">${customFieldRows()}</div>
+      <button class="btn btn-outline btn-sm" onclick="addCustomField()">+ Add Custom Field</button>
+
+      <div class="totals-box" id="totalsBox"></div>
+
+      <hr class="section-divider">
+      <div class="field"><label>Note / Terms (shown at bottom of invoice)</label><textarea id="extraText" rows="3">${escapeHtml(inv.extraText||'')}</textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeInvoiceEditor()">Cancel</button>
+      <button class="btn btn-amber" onclick="saveInvoice()">Save Invoice</button>
+    </div>
+  `;
+}
+
+function custSearchType(){
+  const st = currentStore();
+  const q = document.getElementById('custSearchInput').value.toLowerCase();
+  const dd = document.getElementById('custDropdown');
+  if(!q){ dd.classList.add('hidden'); return; }
+  const matches = st.customers.filter(c=>c.name.toLowerCase().includes(q));
+  if(matches.length===0){ dd.classList.add('hidden'); return; }
+  dd.innerHTML = matches.map(c=>`<div onclick="selectCustomer('${c.id}')">${escapeHtml(c.name)} <span class="small-muted">${escapeHtml(c.email||'')}</span></div>`).join('');
+  dd.classList.remove('hidden');
+}
+function selectCustomer(id){
+  const st = currentStore();
+  const c = st.customers.find(x=>x.id===id);
+  document.getElementById('custSearchInput').value = c.name;
+  document.getElementById('custShipAddr').value = c.shippingAddress||'';
+  document.getElementById('custBillAddr').value = c.billingAddress||'';
+  document.getElementById('custEmail').value = c.email||'';
+  document.getElementById('custPhone').value = c.phone||'';
+  document.getElementById('custDropdown').classList.add('hidden');
+  UI._selectedCustomerId = id;
+}
+document.addEventListener('click', e=>{
+  const dd = document.getElementById('custDropdown');
+  if(dd && !e.target.closest('.product-search-wrap')) dd.classList.add('hidden');
+});
+
+function lineItemRows(st){
+  return UI.invoiceItems.map((item,idx)=>{
+    if(item.custom){
+      return `<tr>
+        <td><input type="text" value="${escapeHtml(item.name)}" oninput="updateLineItem(${idx},'name',this.value)" placeholder="Custom item name"></td>
+        <td><input type="number" value="${item.qty}" oninput="updateLineItem(${idx},'qty',this.value)"></td>
+        <td><input type="number" step="0.01" value="${item.rate}" oninput="updateLineItem(${idx},'rate',this.value)"></td>
+        <td class="mono">${money(item.qty*item.rate)}</td>
+        <td><button class="li-remove" onclick="removeLineItem(${idx})">✕</button></td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>
+        <div class="product-search-wrap">
+          <input type="text" value="${escapeHtml(item.name)}" placeholder="Search product..." oninput="prodLineSearch(${idx},this.value)" autocomplete="off">
+          <div class="product-dropdown hidden" id="prodDD${idx}"></div>
+        </div>
+      </td>
+      <td><input type="number" value="${item.qty}" oninput="updateLineItem(${idx},'qty',this.value)"></td>
+      <td><input type="number" step="0.01" value="${item.rate}" oninput="updateLineItem(${idx},'rate',this.value)"></td>
+      <td class="mono">${money(item.qty*item.rate)}</td>
+      <td><button class="li-remove" onclick="removeLineItem(${idx})">✕</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" class="small-muted" style="text-align:center;padding:18px;">No items yet — add a product or custom item.</td></tr>`;
+}
+function addLineItem(custom){
+  UI.invoiceItems.push(custom ? {custom:true, productId:null, name:'', qty:1, rate:0} : {custom:false, productId:null, name:'', qty:1, rate:0});
+  refreshLineItems();
+}
+function removeLineItem(idx){ UI.invoiceItems.splice(idx,1); refreshLineItems(); }
+function updateLineItem(idx, field, val){
+  const it = UI.invoiceItems[idx];
+  if(field==='qty') it.qty = parseFloat(val)||0;
+  else if(field==='rate') it.rate = parseFloat(val)||0;
+  else if(field==='name') it.name = val;
+  recalcTotals();
+}
+function prodLineSearch(idx, val){
+  UI.invoiceItems[idx].name = val;
+  const st = currentStore();
+  const dd = document.getElementById('prodDD'+idx);
+  const q = val.toLowerCase();
+  const matches = q ? st.products.filter(p=>p.name.toLowerCase().includes(q)) : st.products;
+  if(matches.length===0){ dd.classList.add('hidden'); return; }
+  dd.innerHTML = matches.map(p=>`<div onclick="pickProductForLine(${idx},'${p.id}')">${escapeHtml(p.name)} <span class="small-muted mono">${money(p.price)}</span></div>`).join('');
+  dd.classList.remove('hidden');
+}
+function pickProductForLine(idx, prodId){
+  const st = currentStore();
+  const p = st.products.find(x=>x.id===prodId);
+  UI.invoiceItems[idx] = {custom:false, productId:p.id, name:p.name, qty: UI.invoiceItems[idx].qty||1, rate:p.price};
+  refreshLineItems();
+}
+function refreshLineItems(){
+  const st = currentStore();
+  document.getElementById('lineItemsBody').innerHTML = lineItemRows(st);
+  recalcTotals();
+}
+
+function customFieldRows(){
+  if(UI.customFields.length===0) return '';
+  return `<div class="field-row" style="flex-direction:column;margin-top:10px;">` + UI.customFields.map((cf,idx)=>`
+    <div class="field-row" style="margin-bottom:0;">
+      <div class="field"><input type="text" placeholder="Field label" value="${escapeHtml(cf.label)}" oninput="UI.customFields[${idx}].label=this.value"></div>
+      <div class="field"><input type="text" placeholder="Value" value="${escapeHtml(cf.value)}" oninput="UI.customFields[${idx}].value=this.value"></div>
+      <button class="li-remove" style="align-self:center;" onclick="removeCustomField(${idx})">✕</button>
+    </div>
+  `).join('') + `</div>`;
+}
+function addCustomField(){ UI.customFields.push({label:'',value:''}); document.getElementById('customFieldsWrap').innerHTML = customFieldRows(); }
+function removeCustomField(idx){ UI.customFields.splice(idx,1); document.getElementById('customFieldsWrap').innerHTML = customFieldRows(); }
+
+function toggleShipInput(){
+  const type = document.getElementById('shipType').value;
+  const amtInput = document.getElementById('shipAmount');
+  if(type==='free'){ amtInput.value=0; amtInput.disabled=true; } else { amtInput.disabled=false; }
+  recalcTotals();
+}
+function computeInvoiceTotals(){
+  const subtotal = UI.invoiceItems.reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.rate)||0),0);
+  const shipType = document.getElementById('shipType') ? document.getElementById('shipType').value : 'manual';
+  const shipAmt = shipType==='free' ? 0 : (parseFloat(document.getElementById('shipAmount')?.value)||0);
+  const discount = parseFloat(document.getElementById('discount')?.value)||0;
+  const total = subtotal + shipAmt - discount;
+  return {subtotal, shipAmt, discount, total: Math.max(total,0)};
+}
+function recalcTotals(){
+  const t = computeInvoiceTotals();
+  document.getElementById('totalsBox').innerHTML = `
+    <div class="row"><span>Subtotal</span><span class="mono">${money(t.subtotal)}</span></div>
+    <div class="row"><span>Shipping</span><span class="mono">${money(t.shipAmt)}</span></div>
+    <div class="row"><span>Discount</span><span class="mono">-${money(t.discount)}</span></div>
+    <div class="row grand"><span>Total</span><span class="mono">${money(t.total)}</span></div>
+  `;
+  const st = currentStore();
+  document.getElementById('lineItemsBody').innerHTML = lineItemRows(st);
+}
+setTimeout(()=>{ if(document.getElementById('totalsBox')) recalcTotals(); }, 0);
+
+async function saveInvoice(){
+  const st = currentStore();
+  const name = document.getElementById('custSearchInput').value.trim();
+  if(!name){ alert('Please enter a customer name.'); return; }
+  if(UI.invoiceItems.length===0){ alert('Add at least one line item.'); return; }
+
+  const shipAddr = document.getElementById('custShipAddr').value.trim();
+  const billAddr = document.getElementById('custBillAddr').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+
+  try{
+    let custId = UI._selectedCustomerId;
+    let existing = custId ? st.customers.find(c=>c.id===custId) : st.customers.find(c=>c.name.toLowerCase()===name.toLowerCase());
+    const custData = {name, shippingAddress:shipAddr, billingAddress:billAddr, email, phone};
+    if(existing){
+      custId = existing.id;
+      await storeRef(st.id).collection('customers').doc(custId).update(custData);
+      Object.assign(existing, custData);
+    } else {
+      custId = uid();
+      await storeRef(st.id).collection('customers').doc(custId).set(custData);
+      st.customers.push({id:custId, ...custData});
+    }
+
+    const t = computeInvoiceTotals();
+    const items = UI.invoiceItems.map(it=>({...it, amount:(Number(it.qty)||0)*(Number(it.rate)||0)}));
+    const customFields = UI.customFields.filter(cf=>cf.label||cf.value);
+    const extraText = document.getElementById('extraText').value;
+    const date = document.getElementById('invDate').value || todayISO();
+    const dueDate = document.getElementById('invDueDate').value;
+    const shippingType = document.getElementById('shipType').value;
+
+    if(UI.editingInvoiceId){
+      const inv = st.invoices.find(i=>i.id===UI.editingInvoiceId);
+      const updateData = {
+        customerId: custId, customerSnapshot: custData, date, dueDate, items,
+        shippingType, shippingAmount: t.shipAmt, discount: t.discount,
+        customFields, extraText, total: t.total
+      };
+      await storeRef(st.id).collection('invoices').doc(inv.id).update(updateData);
+      Object.assign(inv, updateData);
+    } else {
+      const number = st.invoicePrefix + String(st.nextInvoiceNumber).padStart(4,'0');
+      const newId = uid();
+      const newInvoice = {
+        number, customerId: custId, customerSnapshot: custData, date, dueDate,
+        items, shippingType, shippingAmount: t.shipAmt, discount: t.discount,
+        customFields, extraText, total: t.total, paidAmount: 0, createdAt: Date.now()
+      };
+      await storeRef(st.id).collection('invoices').doc(newId).set(newInvoice);
+      st.invoices.push({id:newId, ...newInvoice});
+      await storeRef(st.id).update({nextInvoiceNumber: st.nextInvoiceNumber + 1});
+      st.nextInvoiceNumber += 1;
+    }
+    closeInvoiceEditor();
+    UI._selectedCustomerId = null;
+    refreshStoreView();
+  }catch(err){ alert('Error saving invoice: '+err.message); }
+}
+
+/* ============================================================
+   PAYMENT MODAL
+   ============================================================ */
+function openPayModal(invId){
+  const st = currentStore();
+  const inv = st.invoices.find(i=>i.id===invId);
+  const due = Math.max(Number(inv.total) - Number(inv.paidAmount||0), 0);
+  document.getElementById('payModal').innerHTML = `
+    <div class="modal-head"><h3>Record Payment</h3><button class="modal-close" onclick="closePayModal()">✕</button></div>
+    <div class="modal-body">
+      <p class="small-muted">Invoice <b class="mono">${escapeHtml(inv.number)}</b> — Total <b class="mono">${money(inv.total)}</b>, already paid <b class="mono">${money(inv.paidAmount||0)}</b>.</p>
+      <div class="field"><label>Custom Amount to Add</label><input type="number" step="0.01" id="payCustomAmt" placeholder="${due.toFixed(2)}"></div>
+      <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="markFullyPaid('${invId}')">Mark Fully Paid (${money(due)} remaining)</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closePayModal()">Cancel</button>
+      <button class="btn btn-amber" onclick="applyCustomPayment('${invId}')">Apply Payment</button>
+    </div>
+  `;
+  document.getElementById('payModalBg').classList.add('open');
+}
+function closePayModal(){ document.getElementById('payModalBg').classList.remove('open'); }
+async function applyCustomPayment(invId){
+  const st = currentStore();
+  const inv = st.invoices.find(i=>i.id===invId);
+  const amt = parseFloat(document.getElementById('payCustomAmt').value);
+  if(!amt || amt<=0){ alert('Enter a valid payment amount.'); return; }
+  const newPaid = Math.min(Number(inv.paidAmount||0) + amt, inv.total);
+  try{
+    await storeRef(st.id).collection('invoices').doc(invId).update({paidAmount:newPaid});
+    inv.paidAmount = newPaid;
+    closePayModal(); refreshStoreView();
+  }catch(err){ alert('Error recording payment: '+err.message); }
+}
+async function markFullyPaid(invId){
+  const st = currentStore();
+  const inv = st.invoices.find(i=>i.id===invId);
+  try{
+    await storeRef(st.id).collection('invoices').doc(invId).update({paidAmount: inv.total});
+    inv.paidAmount = inv.total;
+    closePayModal(); refreshStoreView();
+  }catch(err){ alert('Error recording payment: '+err.message); }
+}
+
+/* ============================================================
+   INVOICE PRINT / PDF
+   ============================================================ */
+function buildInvoiceHtml(st, inv){
+  const itemsRows = inv.items.map(it=>`<tr><td>${escapeHtml(it.name)}</td><td>${it.qty}</td><td>${money(it.rate)}</td><td>${money(it.qty*it.rate)}</td></tr>`).join('');
+  const customFieldsHtml = (inv.customFields||[]).filter(cf=>cf.label||cf.value).map(cf=>`<div class="r"><span>${escapeHtml(cf.label)}</span><span>${escapeHtml(cf.value)}</span></div>`).join('');
+  return `
+  <div class="inv-paper">
+    <div class="inv-top">
+      <div>
+        ${st.logo?`<img src="${st.logo}">`:''}
+        <div class="inv-store-name" style="margin-top:8px;">${escapeHtml(st.name)}</div>
+      </div>
+      <div class="inv-meta">
+        <div class="num">${escapeHtml(inv.number)}</div>
+        <div style="margin-top:6px;font-size:13px;">Date: ${inv.date}</div>
+        <div style="font-size:13px;">Due: ${inv.dueDate||'—'}</div>
+      </div>
+    </div>
+    <div class="inv-addr-row">
+      <div class="inv-addr-block"><h4>Shipping Address</h4><p>${escapeHtml(inv.customerSnapshot.name)}\n${escapeHtml(inv.customerSnapshot.shippingAddress||'')}</p></div>
+      ${inv.customerSnapshot.billingAddress?`<div class="inv-addr-block"><h4>Billing Address</h4><p>${escapeHtml(inv.customerSnapshot.billingAddress)}</p></div>`:''}
+    </div>
+    <table class="inv-table">
+      <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+      <tbody>${itemsRows}</tbody>
+    </table>
+    <div class="inv-totals">
+      <div class="r"><span>Subtotal</span><span>${money(inv.items.reduce((s,it)=>s+it.qty*it.rate,0))}</span></div>
+      <div class="r"><span>Shipping</span><span>${inv.shippingType==='free'?'Free':money(inv.shippingAmount)}</span></div>
+      ${inv.discount?`<div class="r"><span>Discount</span><span>-${money(inv.discount)}</span></div>`:''}
+      ${customFieldsHtml}
+      <div class="r grand"><span>Total</span><span>${money(inv.total)}</span></div>
+      <div class="r"><span>Paid</span><span>${money(inv.paidAmount||0)}</span></div>
+      <div class="r"><span>Balance Due</span><span>${money(Math.max(inv.total-(inv.paidAmount||0),0))}</span></div>
+    </div>
+    ${inv.extraText?`<div class="inv-extra">${escapeHtml(inv.extraText)}</div>`:''}
+  </div>`;
+}
+function printInvoice(invId){
+  const st = currentStore();
+  const inv = st.invoices.find(i=>i.id===invId);
+  document.getElementById('printModal').innerHTML = `
+    <div class="modal-head"><h3>Invoice ${escapeHtml(inv.number)}</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-amber btn-sm" onclick="doPrint()">⬇ Download / Print PDF</button>
+        <button class="modal-close" onclick="closePrintModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="printArea">${buildInvoiceHtml(st, inv)}</div>
+  `;
+  document.getElementById('printModalBg').classList.add('open');
+}
+function closePrintModal(){ document.getElementById('printModalBg').classList.remove('open'); }
+function doPrint(){
+  const content = document.getElementById('printArea').innerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Invoice</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+      body{margin:0;font-family:'Inter',sans-serif;}
+      .inv-paper{background:#fff;color:#1B2A4A;padding:46px;max-width:780px;margin:0 auto;}
+      .inv-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;}
+      .inv-top img{max-height:56px;max-width:160px;object-fit:contain;}
+      .inv-store-name{font-family:'Fraunces',serif;font-size:22px;font-weight:600;}
+      .inv-meta{text-align:right;}
+      .inv-meta .num{font-family:'JetBrains Mono';font-size:20px;font-weight:700;color:#D97B29;}
+      .inv-addr-row{display:flex;gap:40px;margin-bottom:24px;}
+      .inv-addr-block h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6B7794;margin:0 0 6px;}
+      .inv-addr-block p{margin:0;font-size:13.5px;line-height:1.6;white-space:pre-line;}
+      .inv-table{width:100%;border-collapse:collapse;margin-bottom:18px;}
+      .inv-table th{background:#F1ECE0;font-size:11px;text-transform:uppercase;padding:9px 10px;text-align:left;}
+      .inv-table td{padding:9px 10px;border-bottom:1px solid #E3DCC9;font-size:13.5px;}
+      .inv-totals{margin-left:auto;width:260px;}
+      .inv-totals .r{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px;}
+      .inv-totals .r.grand{font-weight:700;font-size:16px;border-top:2px solid #1B2A4A;padding-top:10px;margin-top:4px;}
+      .inv-extra{margin-top:28px;font-size:13px;color:#3A4A6B;white-space:pre-line;border-top:1px solid #E3DCC9;padding-top:16px;}
+      @media print{ body{padding:0;} }
+    </style></head><body>${content}</body></html>`);
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 400);
+}
+</script>
+</body>
+</html>
