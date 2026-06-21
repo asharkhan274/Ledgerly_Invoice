@@ -355,6 +355,7 @@ table tbody tr:hover{background:var(--paper-dim);}
 <div class="modal-bg" id="payModalBg"><div class="modal modal-sm" id="payModal"></div></div>
 <div class="modal-bg" id="custModalBg"><div class="modal" id="custModal"></div></div>
 <div class="modal-bg" id="printModalBg"><div class="modal" id="printModal" style="max-width:840px;"></div></div>
+<div class="modal-bg" id="labelModalBg"><div class="modal" id="labelModal" style="max-width:700px;"></div></div>
 
 <!-- ============ FIREBASE ============ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1010,7 +1011,7 @@ function renderStoreInvoices(st){
       </div>
     </div>
     <div class="card pad">
-      <table id="invTable"><thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Due</th><th>Total</th><th>Status</th><th style="width:230px">Actions</th></tr></thead>
+      <table id="invTable"><thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Due</th><th>Total</th><th>Status</th><th style="width:380px">Actions</th></tr></thead>
       <tbody id="invTbody">${invoiceRows(list)}</tbody></table>
       ${list.length===0?`<div class="empty-state"><div class="e-icon">🧾</div>No invoices yet — create your first one.</div>`:''}
     </div>
@@ -1027,6 +1028,7 @@ function invoiceRows(list){
       <button class="btn btn-green btn-sm" onclick="openPayModal('${inv.id}')">Pay</button>
       <button class="btn btn-outline btn-sm" onclick="openInvoiceEditor('${inv.id}')">Edit</button>
       <button class="btn btn-outline btn-sm" onclick="printInvoice('${inv.id}')">PDF</button>
+      <button class="btn btn-amber btn-sm" onclick="openShippingLabel('${inv.id}')">Generate Label with LCS</button>
       <button class="btn btn-danger btn-sm" onclick="deleteInvoice('${inv.id}')">Del</button>
     </td>
   </tr>`).join('');
@@ -1102,6 +1104,15 @@ function renderStoreSettings(st){
       <p class="hint">Next invoice will be numbered: <span class="mono" id="nextPreview">${escapeHtml(st.invoicePrefix)}${String(st.nextInvoiceNumber).padStart(4,'0')}</span></p>
       <button class="btn btn-outline" onclick="saveInvoiceNumbering()">Save Numbering</button>
     </div>
+    <div class="card pad" style="max-width:560px;margin-bottom:20px;">
+      <h3 style="margin-top:0">Shipping Label Sender Details (for LCS)</h3>
+      <p class="small-muted">This appears as the "Sender" on every generated shipping label.</p>
+      <div class="field"><label>Sender / Business Name</label><input type="text" id="setShipperName" value="${escapeHtml(st.shipperName||'')}" placeholder="e.g. Bulksource"></div>
+      <div class="field"><label>Sender Code / Account No.</label><input type="text" id="setShipperCode" value="${escapeHtml(st.shipperCode||'')}" placeholder="e.g. 2322"></div>
+      <div class="field"><label>Sender Address</label><textarea id="setShipperAddress" rows="2" placeholder="e.g. House#30-B Block E Unit#6 Latifabad Hyderabad.">${escapeHtml(st.shipperAddress||'')}</textarea></div>
+      <div class="field"><label>Sender Phone</label><input type="text" id="setShipperPhone" value="${escapeHtml(st.shipperPhone||'')}" placeholder="e.g. +92 348 1273957"></div>
+      <button class="btn btn-outline" onclick="saveShipperDetails()">Save Sender Details</button>
+    </div>
     <div class="card pad" style="max-width:560px;">
       <h3 style="margin-top:0">Backup This Store</h3>
       <p class="small-muted">Download your products, customers and invoices, or restore from a previous backup.</p>
@@ -1112,6 +1123,18 @@ function renderStoreSettings(st){
       </div>
     </div>
   `;
+}
+async function saveShipperDetails(){
+  const st = currentStore();
+  const shipperName = document.getElementById('setShipperName').value.trim();
+  const shipperCode = document.getElementById('setShipperCode').value.trim();
+  const shipperAddress = document.getElementById('setShipperAddress').value.trim();
+  const shipperPhone = document.getElementById('setShipperPhone').value.trim();
+  try{
+    await storeRef(st.id).update({shipperName, shipperCode, shipperAddress, shipperPhone});
+    Object.assign(st, {shipperName, shipperCode, shipperAddress, shipperPhone});
+    toast('Sender details saved', 'success');
+  }catch(err){ toast('Error saving sender details: '+err.message, 'error'); }
 }
 async function saveStoreSettings(){
   const st = currentStore();
