@@ -232,6 +232,9 @@ table tbody tr:hover{background:var(--paper-dim);}
 </head>
 <body>
 
+<!-- ============ TOASTS ============ -->
+<div id="toastContainer"></div>
+
 <!-- ============ GLOBAL LOADING OVERLAY ============ -->
 <div id="globalLoading" style="position:fixed;inset:0;background:rgba(250,247,240,.92);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;">
   <div style="width:34px;height:34px;border:3px solid #E3DCC9;border-top-color:#D97B29;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
@@ -357,6 +360,7 @@ table tbody tr:hover{background:var(--paper-dim);}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -380,6 +384,16 @@ function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'
 function money(n){ n = Number(n)||0; return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function showLoading(on){ document.getElementById('globalLoading').style.display = on ? 'flex' : 'none'; }
+
+function toast(message, type){
+  type = type || 'info';
+  const icons = {success:'✓', error:'✕', info:'ℹ'};
+  const el = document.createElement('div');
+  el.className = 'toast t-'+type;
+  el.innerHTML = `<span class="t-icon">${icons[type]}</span><span>${escapeHtml(message)}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
 
 let DB = { stores: [], session: null };
 let UI = { storeView:'dashboard', adminView:'overview', editingInvoiceId:null, invoiceItems:[], customFields:[], adminViewingStoreId:null, custDetailId:null, _selectedCustomerId:null };
@@ -538,6 +552,7 @@ async function createAdminAccount(){
   try{
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
     await fdb.collection('system').doc('admin').set({uid: cred.user.uid, email});
+    toast('Admin account created!', 'success');
     // onAuthStateChanged takes over from here
   }catch(err){
     if(err.code==='auth/email-already-in-use'){
@@ -574,6 +589,7 @@ async function handleStoreSignup(){
       invoicePrefix: 'INV-', nextInvoiceNumber: 1,
       createdAt: Date.now()
     });
+    toast('Store account created!', 'success');
     // onAuthStateChanged takes over and logs them straight in
   }catch(err){ showLoginMsg(friendlyAuthError(err)); }
 }
@@ -650,7 +666,8 @@ async function adminDeleteStore(id){
     await clearAndRefillCollection(id, 'invoices', []);
     await storeRef(id).delete();
     DB.stores = DB.stores.filter(s=>s.id!==id);
-  }catch(err){ alert('Error deleting store: '+err.message); }
+    toast('Store deleted', 'success');
+  }catch(err){ toast('Error deleting store: '+err.message, 'error'); }
   showLoading(false);
   UI.adminViewingStoreId=null;
   adminGo('stores');
@@ -691,8 +708,8 @@ function renderAdminStoreDetail(id){
   `;
 }
 async function adminSendReset(email){
-  try{ await auth.sendPasswordResetEmail(email); alert('Password reset email sent to '+email); }
-  catch(err){ alert('Could not send reset email: '+err.message); }
+  try{ await auth.sendPasswordResetEmail(email); toast('Password reset email sent to '+email, 'success'); }
+  catch(err){ toast('Could not send reset email: '+err.message, 'error'); }
 }
 
 function renderAdminSettings(){
@@ -729,9 +746,11 @@ async function adminSaveSettings(){
     }
     if(pass) await auth.currentUser.updatePassword(pass);
     m.textContent='Admin settings updated.'; m.className='msg success';
+    toast('Admin settings updated', 'success');
   }catch(err){
     m.textContent = err.code==='auth/requires-recent-login' ? 'Please log out and back in, then try again.' : err.message;
     m.className='msg error';
+    toast(m.textContent, 'error');
   }
 }
 
@@ -741,6 +760,7 @@ function downloadBackup(obj, filename){
   a.href = URL.createObjectURL(blob);
   a.download = filename + '-' + todayISO() + '.json';
   document.body.appendChild(a); a.click(); a.remove();
+  toast('Backup downloaded', 'success');
 }
 
 async function restoreFullBackup(ev){
@@ -762,7 +782,8 @@ async function restoreFullBackup(ev){
       DB.stores = await fetchAllStoresFull();
       showLoading(false);
       adminGo('stores');
-    }catch(err){ showLoading(false); alert('Restore failed: '+err.message); }
+      toast('Backup restored', 'success');
+    }catch(err){ showLoading(false); toast('Restore failed: '+err.message, 'error'); }
   };
   reader.readAsText(file);
 }
@@ -864,18 +885,20 @@ async function saveProduct(id){
   const st = currentStore();
   const name = document.getElementById('pfName').value.trim();
   const price = parseFloat(document.getElementById('pfPrice').value)||0;
-  if(!name){ alert('Enter a product name.'); return; }
+  if(!name){ toast('Enter a product name.', 'error'); return; }
   try{
     if(id){
       await storeRef(st.id).collection('products').doc(id).update({name, price});
       const p = st.products.find(x=>x.id===id); p.name=name; p.price=price;
+      toast('Product updated', 'success');
     } else {
       const newId = uid();
       await storeRef(st.id).collection('products').doc(newId).set({name, price});
       st.products.push({id:newId, name, price});
+      toast('Product added', 'success');
     }
     closeProductForm(); refreshStoreView();
-  }catch(err){ alert('Error saving product: '+err.message); }
+  }catch(err){ toast('Error saving product: '+err.message, 'error'); }
 }
 async function deleteProduct(id){
   const st = currentStore();
@@ -884,7 +907,8 @@ async function deleteProduct(id){
     await storeRef(st.id).collection('products').doc(id).delete();
     st.products = st.products.filter(p=>p.id!==id);
     refreshStoreView();
-  }catch(err){ alert('Error deleting product: '+err.message); }
+    toast('Product deleted', 'success');
+  }catch(err){ toast('Error deleting product: '+err.message, 'error'); }
 }
 
 /* ---------- CUSTOMERS ---------- */
@@ -907,9 +931,9 @@ function renderStoreCustomers(st){
 }
 function custTableHtml(list){
   const st = currentStore();
-  return `<table><thead><tr><th>Customer</th><th>Invoices</th><th>Total Sale</th><th>Total Paid</th></tr></thead><tbody>
+  return `<table><thead><tr><th>Customer</th><th>Invoices</th><th>Total Sale</th><th>Total Paid</th><th style="width:90px"></th></tr></thead><tbody>
   ${list.map(c=>{ const s = customerStats(st,c.id);
-    return `<tr class="cust-card" onclick="UI.custDetailId='${c.id}';refreshStoreView()"><td><b>${escapeHtml(c.name)}</b><br><span class="small-muted">${escapeHtml(c.email||'')}</span></td><td>${s.count}</td><td class="mono">${money(s.totalSale)}</td><td class="mono">${money(s.totalPaid)}</td></tr>`;
+    return `<tr class="cust-card" onclick="UI.custDetailId='${c.id}';refreshStoreView()"><td><b>${escapeHtml(c.name)}</b><br><span class="small-muted">${escapeHtml(c.email||'')}</span></td><td>${s.count}</td><td class="mono">${money(s.totalSale)}</td><td class="mono">${money(s.totalPaid)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCustomer('${c.id}')">Delete</button></td></tr>`;
   }).join('')}</tbody></table>`;
 }
 function filterCustomers(){
@@ -917,12 +941,27 @@ function filterCustomers(){
   const q = document.getElementById('custSearch').value.toLowerCase();
   document.getElementById('custGrid').innerHTML = custTableHtml(st.customers.filter(c=>c.name.toLowerCase().includes(q)));
 }
+async function deleteCustomer(id){
+  const st = currentStore();
+  const c = st.customers.find(x=>x.id===id);
+  if(!confirm(`Delete customer "${c.name}"? Their past invoices will stay in My Invoices, but won't be linked to a customer record anymore.`)) return;
+  try{
+    await storeRef(st.id).collection('customers').doc(id).delete();
+    st.customers = st.customers.filter(x=>x.id!==id);
+    UI.custDetailId = null;
+    refreshStoreView();
+    toast('Customer deleted', 'success');
+  }catch(err){ toast('Error deleting customer: '+err.message, 'error'); }
+}
 function renderCustomerDetail(st, custId){
   const c = st.customers.find(x=>x.id===custId);
   if(!c){ UI.custDetailId=null; return renderStoreCustomers(st); }
   const s = customerStats(st, custId);
   return `
-    <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="UI.custDetailId=null;refreshStoreView()">← Back to Customers</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <button class="btn btn-outline btn-sm" onclick="UI.custDetailId=null;refreshStoreView()">← Back to Customers</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">Delete Customer</button>
+    </div>
     <div class="page-title">${escapeHtml(c.name)}</div>
     <div class="stat-grid">
       <div class="card stat-card"><div class="v">${s.count}</div><div class="l">Invoices</div></div>
@@ -1005,7 +1044,8 @@ async function deleteInvoice(id){
     await storeRef(st.id).collection('invoices').doc(id).delete();
     st.invoices = st.invoices.filter(i=>i.id!==id);
     refreshStoreView();
-  }catch(err){ alert('Error deleting invoice: '+err.message); }
+    toast('Invoice deleted', 'success');
+  }catch(err){ toast('Error deleting invoice: '+err.message, 'error'); }
 }
 async function restoreStoreBackup(ev){
   const file = ev.target.files[0]; if(!file) return;
@@ -1028,7 +1068,8 @@ async function restoreStoreBackup(ev){
       DB.stores = [fresh];
       showLoading(false);
       refreshStoreView();
-    }catch(err){ showLoading(false); alert('Invalid backup file: '+err.message); }
+      toast('Backup restored', 'success');
+    }catch(err){ showLoading(false); toast('Invalid backup file: '+err.message, 'error'); }
   };
   reader.readAsText(file);
 }
@@ -1092,9 +1133,11 @@ async function saveStoreSettings(){
     Object.assign(st, profileUpdate);
     renderStoreSidebarBrand(st);
     m.textContent='Settings saved.'; m.className='msg success';
+    toast('Settings saved', 'success');
   }catch(err){
     m.textContent = err.code==='auth/requires-recent-login' ? 'Please log out and back in, then try again.' : err.message;
     m.className='msg error';
+    toast(m.textContent, 'error');
   }
 }
 async function saveInvoiceNumbering(){
@@ -1105,7 +1148,8 @@ async function saveInvoiceNumbering(){
     await storeRef(st.id).update({invoicePrefix, nextInvoiceNumber});
     st.invoicePrefix = invoicePrefix; st.nextInvoiceNumber = nextInvoiceNumber;
     refreshStoreView();
-  }catch(err){ alert('Error saving numbering: '+err.message); }
+    toast('Invoice numbering updated', 'success');
+  }catch(err){ toast('Error saving numbering: '+err.message, 'error'); }
 }
 
 /* ============================================================
@@ -1331,8 +1375,8 @@ setTimeout(()=>{ if(document.getElementById('totalsBox')) recalcTotals(); }, 0);
 async function saveInvoice(){
   const st = currentStore();
   const name = document.getElementById('custSearchInput').value.trim();
-  if(!name){ alert('Please enter a customer name.'); return; }
-  if(UI.invoiceItems.length===0){ alert('Add at least one line item.'); return; }
+  if(!name){ toast('Please enter a customer name.', 'error'); return; }
+  if(UI.invoiceItems.length===0){ toast('Add at least one line item.', 'error'); return; }
 
   const shipAddr = document.getElementById('custShipAddr').value.trim();
   const billAddr = document.getElementById('custBillAddr').value.trim();
@@ -1360,6 +1404,7 @@ async function saveInvoice(){
     const date = document.getElementById('invDate').value || todayISO();
     const dueDate = document.getElementById('invDueDate').value;
     const shippingType = document.getElementById('shipType').value;
+    const wasEditing = !!UI.editingInvoiceId;
 
     if(UI.editingInvoiceId){
       const inv = st.invoices.find(i=>i.id===UI.editingInvoiceId);
@@ -1386,7 +1431,8 @@ async function saveInvoice(){
     closeInvoiceEditor();
     UI._selectedCustomerId = null;
     refreshStoreView();
-  }catch(err){ alert('Error saving invoice: '+err.message); }
+    toast(wasEditing ? 'Invoice updated' : 'Invoice created', 'success');
+  }catch(err){ toast('Error saving invoice: '+err.message, 'error'); }
 }
 
 /* ============================================================
@@ -1415,13 +1461,14 @@ async function applyCustomPayment(invId){
   const st = currentStore();
   const inv = st.invoices.find(i=>i.id===invId);
   const amt = parseFloat(document.getElementById('payCustomAmt').value);
-  if(!amt || amt<=0){ alert('Enter a valid payment amount.'); return; }
+  if(!amt || amt<=0){ toast('Enter a valid payment amount.', 'error'); return; }
   const newPaid = Math.min(Number(inv.paidAmount||0) + amt, inv.total);
   try{
     await storeRef(st.id).collection('invoices').doc(invId).update({paidAmount:newPaid});
     inv.paidAmount = newPaid;
     closePayModal(); refreshStoreView();
-  }catch(err){ alert('Error recording payment: '+err.message); }
+    toast('Payment recorded', 'success');
+  }catch(err){ toast('Error recording payment: '+err.message, 'error'); }
 }
 async function markFullyPaid(invId){
   const st = currentStore();
@@ -1430,7 +1477,8 @@ async function markFullyPaid(invId){
     await storeRef(st.id).collection('invoices').doc(invId).update({paidAmount: inv.total});
     inv.paidAmount = inv.total;
     closePayModal(); refreshStoreView();
-  }catch(err){ alert('Error recording payment: '+err.message); }
+    toast('Invoice marked as paid', 'success');
+  }catch(err){ toast('Error recording payment: '+err.message, 'error'); }
 }
 
 /* ============================================================
@@ -1439,22 +1487,35 @@ async function markFullyPaid(invId){
 function buildInvoiceHtml(st, inv){
   const itemsRows = inv.items.map(it=>`<tr><td>${escapeHtml(it.name)}</td><td>${it.qty}</td><td>${money(it.rate)}</td><td>${money(it.qty*it.rate)}</td></tr>`).join('');
   const customFieldsHtml = (inv.customFields||[]).filter(cf=>cf.label||cf.value).map(cf=>`<div class="r"><span>${escapeHtml(cf.label)}</span><span>${escapeHtml(cf.value)}</span></div>`).join('');
+  const c = inv.customerSnapshot || {};
+  const contactLines = `
+    ${c.phone?`<p class="inv-cust-line">📞 ${escapeHtml(c.phone)}</p>`:''}
+    ${c.email?`<p class="inv-cust-line">✉ ${escapeHtml(c.email)}</p>`:''}
+    ${c.shippingAddress?`<p class="inv-cust-line">${escapeHtml(c.shippingAddress)}</p>`:''}
+  `;
   return `
   <div class="inv-paper">
+    <div class="inv-accent-bar"></div>
+    <div class="inv-body">
     <div class="inv-top">
       <div>
         ${st.logo?`<img src="${st.logo}">`:''}
         <div class="inv-store-name" style="margin-top:8px;">${escapeHtml(st.name)}</div>
       </div>
       <div class="inv-meta">
+        <div class="inv-label">Invoice</div>
         <div class="num">${escapeHtml(inv.number)}</div>
-        <div style="margin-top:6px;font-size:13px;">Date: ${inv.date}</div>
+        <div style="margin-top:8px;font-size:13px;">Date: ${inv.date}</div>
         <div style="font-size:13px;">Due: ${inv.dueDate||'—'}</div>
       </div>
     </div>
     <div class="inv-addr-row">
-      <div class="inv-addr-block"><h4>Shipping Address</h4><p>${escapeHtml(inv.customerSnapshot.name)}\n${escapeHtml(inv.customerSnapshot.shippingAddress||'')}</p></div>
-      ${inv.customerSnapshot.billingAddress?`<div class="inv-addr-block"><h4>Billing Address</h4><p>${escapeHtml(inv.customerSnapshot.billingAddress)}</p></div>`:''}
+      <div class="inv-addr-block">
+        <h4>Bill To</h4>
+        <p class="inv-cust-name">${escapeHtml(c.name||'')}</p>
+        ${contactLines}
+      </div>
+      ${c.billingAddress?`<div class="inv-addr-block"><h4>Billing Address</h4><p>${escapeHtml(c.billingAddress)}</p></div>`:''}
     </div>
     <table class="inv-table">
       <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
@@ -1470,6 +1531,8 @@ function buildInvoiceHtml(st, inv){
       <div class="r"><span>Balance Due</span><span>${money(Math.max(inv.total-(inv.paidAmount||0),0))}</span></div>
     </div>
     ${inv.extraText?`<div class="inv-extra">${escapeHtml(inv.extraText)}</div>`:''}
+    <div class="inv-thanks">Thank you for your business</div>
+    </div>
   </div>`;
 }
 function printInvoice(invId){
@@ -1478,7 +1541,8 @@ function printInvoice(invId){
   document.getElementById('printModal').innerHTML = `
     <div class="modal-head"><h3>Invoice ${escapeHtml(inv.number)}</h3>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-amber btn-sm" onclick="doPrint()">⬇ Download / Print PDF</button>
+        <button class="btn btn-amber btn-sm" onclick="downloadInvoicePDF('${escapeHtml(inv.number)}')">⬇ Download PDF</button>
+        <button class="btn btn-outline btn-sm" onclick="doPrint()">🖶 Print</button>
         <button class="modal-close" onclick="closePrintModal()">✕</button>
       </div>
     </div>
@@ -1487,6 +1551,22 @@ function printInvoice(invId){
   document.getElementById('printModalBg').classList.add('open');
 }
 function closePrintModal(){ document.getElementById('printModalBg').classList.remove('open'); }
+function downloadInvoicePDF(invoiceNumber){
+  const element = document.getElementById('printArea').querySelector('.inv-paper');
+  const opt = {
+    margin: 0,
+    filename: (invoiceNumber||'invoice') + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor:'#ffffff' },
+    jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
+  };
+  toast('Preparing PDF…', 'info');
+  html2pdf().set(opt).from(element).save().then(()=>{
+    toast('PDF downloaded', 'success');
+  }).catch(err=>{
+    toast('PDF generation failed: '+err.message, 'error');
+  });
+}
 function doPrint(){
   const content = document.getElementById('printArea').innerHTML;
   const w = window.open('', '_blank');
@@ -1494,22 +1574,28 @@ function doPrint(){
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
     <style>
       body{margin:0;font-family:'Inter',sans-serif;}
-      .inv-paper{background:#fff;color:#1B2A4A;padding:46px;max-width:780px;margin:0 auto;}
-      .inv-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;}
+      .inv-paper{background:#fff;color:#1B2A4A;padding:0 0 46px;max-width:780px;margin:0 auto;}
+      .inv-accent-bar{height:7px;background:linear-gradient(90deg,#D97B29,#B6611A);margin-bottom:36px;}
+      .inv-body{padding:0 46px;}
+      .inv-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:34px;}
       .inv-top img{max-height:56px;max-width:160px;object-fit:contain;}
       .inv-store-name{font-family:'Fraunces',serif;font-size:22px;font-weight:600;}
       .inv-meta{text-align:right;}
-      .inv-meta .num{font-family:'JetBrains Mono';font-size:20px;font-weight:700;color:#D97B29;}
-      .inv-addr-row{display:flex;gap:40px;margin-bottom:24px;}
-      .inv-addr-block h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6B7794;margin:0 0 6px;}
+      .inv-meta .inv-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#8E9AB8;margin-bottom:2px;}
+      .inv-meta .num{font-family:'JetBrains Mono';font-size:21px;font-weight:700;color:#D97B29;}
+      .inv-addr-row{display:flex;gap:48px;margin-bottom:28px;padding-bottom:22px;border-bottom:1px solid #E3DCC9;}
+      .inv-addr-block h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#8E9AB8;margin:0 0 8px;}
       .inv-addr-block p{margin:0;font-size:13.5px;line-height:1.6;white-space:pre-line;}
+      .inv-cust-name{font-weight:700;font-size:14.5px;margin-bottom:3px;}
+      .inv-cust-line{font-size:12.5px;color:#3A4A6B;margin:2px 0;}
       .inv-table{width:100%;border-collapse:collapse;margin-bottom:18px;}
-      .inv-table th{background:#F1ECE0;font-size:11px;text-transform:uppercase;padding:9px 10px;text-align:left;}
-      .inv-table td{padding:9px 10px;border-bottom:1px solid #E3DCC9;font-size:13.5px;}
-      .inv-totals{margin-left:auto;width:260px;}
+      .inv-table th{background:#F1ECE0;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:10px 10px;text-align:left;color:#3A4A6B;}
+      .inv-table td{padding:10px 10px;border-bottom:1px solid #E3DCC9;font-size:13.5px;}
+      .inv-totals{margin-left:auto;width:270px;background:#FAF7F0;border-radius:10px;padding:14px 18px;}
       .inv-totals .r{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px;}
       .inv-totals .r.grand{font-weight:700;font-size:16px;border-top:2px solid #1B2A4A;padding-top:10px;margin-top:4px;}
       .inv-extra{margin-top:28px;font-size:13px;color:#3A4A6B;white-space:pre-line;border-top:1px solid #E3DCC9;padding-top:16px;}
+      .inv-thanks{margin-top:34px;text-align:center;font-family:'Fraunces',serif;font-size:15px;color:#8E9AB8;}
       @media print{ body{padding:0;} }
     </style></head><body>${content}</body></html>`);
   w.document.close();
